@@ -33,7 +33,7 @@ jobs:
       if: always() 
       uses: actions/upload-artifact@v4
       with:
-        name: name: playwright-report-${{ matrix.environment }}
+        name: playwright-report-${{ matrix.environment }}
         path: playwright-report/
         retention-days: 7
 
