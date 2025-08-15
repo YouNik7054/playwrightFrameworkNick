@@ -1,0 +1,69 @@
+name: Playwright Tests
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [dev, staging, prod]
+        
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+    - name: Install dependencies
+      run: npm ci
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+      
+    - name: Run Playwright tests
+      run: npx playwright test
+      env:
+        CI: true
+        ENV: ${{ matrix.environment }}
+    - name: Upload Playwright Report
+      if: always() 
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 7
+
+    - name: Upload test-results (screenshots, videos, traces)
+      if: always() 
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: test-results
+        retention-days: 7 
+
+    - name: Upload HTML report for pages
+      if: always() 
+      uses: actions/upload-pages-artifact@v4
+      with:
+        name: playwright-report
+
+  deploy-report:
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write      
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Deploy HTMP report to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4    
